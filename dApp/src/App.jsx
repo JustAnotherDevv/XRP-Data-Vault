@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import "./App.css";
 import {
   Client,
@@ -6,6 +6,10 @@ import {
   rippleTimeToISOTime,
   rippleTimeToUnixTime,
 } from "xrpl";
+import Navbar from "./components/layout/Navbar";
+import LedgerProvider from "./contexts/LedgerProvider.tsx";
+import { LedgerContext } from "./contexts/LedgerProvider.tsx";
+import Home from "./pages/Home";
 
 async function getBatchAccountTx(address) {
   try {
@@ -46,30 +50,22 @@ function App() {
   const [userAddress, setUserAddress] = useState(
     "rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn"
   );
-
-  function truncateStr(str, n = 6) {
-    if (!str) return "";
-    return str.length > n
-      ? str.substr(0, n - 1) +
-          "..." +
-          str.substr(str.length - n, str.length - 1)
-      : str;
-  }
+  const { xummInstance, account, chainId, connected } =
+    useContext(LedgerContext);
 
   useEffect(() => {
-    (async () => {
-      console.log(await getBatchAccountTx(userAddress));
-    })();
+    (async () => {})();
   }, []);
 
   return (
-    <div className="min-w-screen">
-      <div className="flex flex-col items-center p-5">
-        <p className="text-6xl font-bold mt-12 mb-6 text-success">
-          Unlocking XRP potential app
-        </p>
-      </div>
-    </div>
+    <>
+      <LedgerProvider>
+        <div className="min-w-screen h-screen bg-gray-900">
+          <Navbar />
+          <Home />
+        </div>
+      </LedgerProvider>
+    </>
   );
 }
 
