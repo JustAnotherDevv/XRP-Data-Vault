@@ -1,68 +1,117 @@
-const { XummSdk } = require("xumm-sdk");
-const Sdk = new XummSdk(
-  import.meta.env.VITE_XUMM_KEY,
-  import.meta.env.VITE_XUMM_SECRET
-);
+const express = require("express");
+const xrpl = require("xrpl");
+require("dotenv").config();
+const fs = require("fs");
+const verifySignature = require("verify-xrpl-signature").verifySignature;
 
-const main = async () => {
-  const appInfo = await Sdk.ping();
-  console.log(appInfo.application.name);
+const app = express();
 
-  const request = {
-    TransactionType: "Payment",
-    Destination: "rPmpEHzTCfhvzo8fDv8GjeapBA1kqehXj6",
-    Amount: "10000",
-    Memos: [
-      {
-        Memo: {
-          MemoData: "F09F988E20596F7520726F636B21",
-        },
-      },
-    ],
-  };
+const port = 4000;
+app.listen(port, () => {
+  console.log(`XRPL data vault server listening on port ${port}`);
+});
 
-  //   const payload = await Sdk.payload.create(request, true);
-  //   console.log(payload);
+let vaults = [];
+let sessions = new Map();
 
-  const subscription = await Sdk.payload.createAndSubscribe(
-    request,
-    (event) => {
-      console.log("New payload event:", event.data);
-
-      if (event.data.signed === true) {
-        // No need to console.log here, we'll do that below
-        return event.data;
-      }
-
-      if (event.data.signed === false) {
-        // No need to console.log here, we'll do that below
-        return false;
-      }
-    }
-  );
-
-  console.log(subscription.created);
-
-  /**
-   * Now let's wait until the subscription resolved (by returning something)
-   * in the callback function.
-   */
-  const resolveData = await subscription.resolved;
-
-  if (resolveData.signed === false) {
-    console.log("The sign request was rejected :(");
-  }
-
-  if (resolveData.signed === true) {
-    console.log("Woohoo! The sign request was signed :)");
-
-    /**
-     * Let's fetch the full payload end result, and get the issued
-     * user token, we can use to send our next payload per Push notification
-     */
-    const result = await Sdk.payload.get(resolveData.payload_uuidv4);
-    console.log("User token:", result.application.issued_user_token);
-  }
+const verifyUserSignature = async (account, signature) => {
+  console.log(verifySignature(signature));
+  //   console.log(verifySignature(signature, account));
+  sessions.set(account, Date.now());
+  return true;
 };
 
-main();
+const createDataVault = async (
+  account,
+  requiresWhietelist,
+  requiresNft,
+  whitelistedAdresses,
+  ipfsData
+) => {
+  vaults.push({
+    owner: account,
+    whitelist: requiresWhietelist,
+    whitelistedAdresses: whitelistedAdresses,
+    requiresNft: requiresNft,
+    data: ipfsData,
+  });
+  console.log(vaults);
+  return true;
+};
+
+const getVaultData = async (account, vaultId) => {
+  if (vaultId >= vaults.length)
+    throw new Error("Can't get data for nonexisting vault!");
+  return vaults[vaultId];
+};
+
+app.get("/api/login", (req, res) => {
+  (async () => {
+    try {
+      const { account, signature } = await req.query;
+      console.log(account, signature);
+      return res.send({
+        result: await verifyUserSignature(account, signature),
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({
+        Error: `${error}`,
+      });
+    }
+  })();
+});
+
+app.get("/api/addVault", (req, res) => {
+  (async () => {
+    try {
+      const {
+        account,
+        requiresWhietelist,
+        requiresNft,
+        whitelistedAdresses,
+        ipfsData,
+      } = await req.query;
+      console.log(
+        account,
+        requiresWhietelist,
+        requiresNft,
+        whitelistedAdresses,
+        ipfsData
+      );
+      return res.send({
+        result: await createDataVault(
+          account,
+          requiresWhietelist,
+          requiresNft,
+          whitelistedAdresses,
+          ipfsData
+        ),
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({
+        Error: `${error}`,
+      });
+    }
+  })();
+});
+
+app.get("/api/getVault", (req, res) => {
+  (async () => {
+    try {
+      const { account, vaultId } = await req.query;
+      console.log(account, vaultId);
+      return res.send({
+        result: await getVaultData(account, vaultId),
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({
+        Error: `${error}`,
+      });
+    }
+  })();
+});
+
+module.exports = app;

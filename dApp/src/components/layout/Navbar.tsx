@@ -23,9 +23,9 @@ const Navbar = () => {
 
   const signInWithXumm = async () => {
     const res = await connect();
-    console.log(res);
-    console.log(await xummInstance);
-    console.log(account);
+    // console.log(res);
+    // console.log(await xummInstance);
+    // console.log(account);
   };
 
   return (
@@ -72,7 +72,7 @@ const Navbar = () => {
         >
           <ArrowRightOnRectangleIcon className="fill-current h-5 w-5 mr-2 mt-0.5 text-green-300" />
           {!account ? (
-            <div onClick={() => signInWithXumm()}>Login</div>
+            <div onClick={() => signInWithXumm()}>XUMM login</div>
           ) : (
             <div onClick={() => disconnect()}>{truncateStr(account)}</div>
           )}

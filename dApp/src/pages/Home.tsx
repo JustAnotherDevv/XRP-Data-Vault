@@ -49,14 +49,16 @@ function Home() {
   };
 
   async function signInWithXumm() {
-    console.log(xummInstance);
-    console.log(account);
+    const res = await connect();
+    // console.log(res);
+    // console.log(xummInstance);
+    // console.log(account);
   }
 
   useEffect(() => {
     (async () => {
-      console.log(xummInstance);
-      console.log(account);
+      // console.log(xummInstance);
+      // console.log(account);
     })();
   }, []);
 
@@ -64,11 +66,16 @@ function Home() {
     <>
       <div className="min-w-screen bg-gray-900">
         <div className="flex flex-col items-center p-5">
-          <p className="text-6xl font-bold my-64 text-success text-gray-300">
+          <p className="text-6xl font-bold my-64 text-gray-300">
             Your token-gated experience begins here
           </p>
           {!account ? (
-            <button onClick={signInWithXumm}>Sign in</button>
+            <button
+              className="text-green-300 border border-green-300 rounded-xl px-5 py-2"
+              onClick={signInWithXumm}
+            >
+              XUMM login
+            </button>
           ) : (
             <Article />
           )}
