@@ -28,7 +28,7 @@ const LedgerProvider = ({ children }) => {
       console.log(xummInstance);
       setXummInstance(xummInstance);
     });
-    getData();
+    // getData();
     return xummInstance;
   };
 
@@ -40,28 +40,34 @@ const LedgerProvider = ({ children }) => {
   };
 
   const getData = async () => {
-    const payload = await xummInstance.payload?.createAndSubscribe(
+    let payload = await xummInstance.payload?.createAndSubscribe(
       {
         Account: account,
         TransactionType: "SignIn",
-        Fee: "12",
-        Sequence: 5,
-        SetFlag: 5,
-        MessageKey:
-          "03AB40A0490F9B7ED8DF29D246BF2D6269820A0EE7742ACDD457BEA7C7D0931EDB",
       },
-      (event) => {
+      async (event) => {
         // Return if signed or not signed (rejected)
         console.log(JSON.stringify(event.data, null, 2));
         // Only return (websocket will live till non void)
         if (Object.keys(event.data).indexOf("signed") > -1) {
+          const { payload_uuidv4 } = await xummInstance.environment.jwt;
+          const payloadResult = await xummInstance.payload?.get(payload_uuidv4);
+          console.log(payloadResult);
           return true;
         }
       }
     );
 
     console.log(`payload: `, payload);
-    window.open(payload.created.next.always);
+    console.log(await xummInstance.payload?.get(payload.created));
+    window.open(payload.created.next.no_push_msg_received);
+
+    xummInstance.on("success", async () => {
+      // console.log(await xummInstance.payload?.get(payload.created));
+      const { payload_uuidv4 } = await xummInstance.environment.jwt;
+      const payloadResult = await xummInstance.payload?.get(payload_uuidv4);
+      console.log(payloadResult);
+    });
 
     return payload;
   };
@@ -77,23 +83,23 @@ const LedgerProvider = ({ children }) => {
     })();
   }, []);
 
-  // useEffect(() => {
-  //   console.log("initialized ", initialized);
-  //   if (!initialized && xummInstance) {
-  //     (async () => {
-  //       console.log(xummInstance);
-  //       const connectedAcc = xummInstance.user.account.then((a) => {
-  //         console.log("a ", a);
-  //         if (a.length != 0 && !initialized) {
-  //           setInitialized(true);
-  //           console.log("connecting");
-  //           connect();
-  //         }
-  //         return a;
-  //       });
-  //     })();
-  //   }
-  // }, [xummInstance]);
+  useEffect(() => {
+    console.log("initialized ", initialized);
+    if (!initialized && xummInstance) {
+      (async () => {
+        console.log(xummInstance);
+        const connectedAcc = xummInstance.user.account.then((a) => {
+          console.log("a ", a);
+          if (a.length != 0 && !initialized) {
+            setInitialized(true);
+            console.log("connecting");
+            connect();
+          }
+          return a;
+        });
+      })();
+    }
+  }, [xummInstance]);
 
   return (
     <LedgerContext.Provider

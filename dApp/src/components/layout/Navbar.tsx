@@ -45,14 +45,6 @@ const Navbar = () => {
           className="flex text-gray-400 hover:text-green-300
                     cursor-pointer transition-colors duration-300"
         >
-          Home
-        </a>
-
-        <a
-          className="flex text-gray-400 
-                    cursor-pointer transition-colors duration-300
-                     hover:text-green-300"
-        >
           Vaults
         </a>
 
@@ -60,7 +52,7 @@ const Navbar = () => {
           className="flex text-gray-400 hover:text-green-300
                     cursor-pointer transition-colors duration-300"
         >
-          Upload
+          Create
         </a>
       </div>
 
