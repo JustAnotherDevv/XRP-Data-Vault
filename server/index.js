@@ -26,6 +26,57 @@ const verifyUserSignature = async (account, signature) => {
   return true;
 };
 
+/**
+ * Checks for all NFTs owned by a particular address
+ * @param {string} address - The wallet address to check
+ * @param {string} [taxon] - An optional parameter used to filter the NFTs by taxon
+ * @returns {object[]} - An array of NFTs owned by the given address. If no NFTs are found, returns an empty array
+ */
+const getBatchNFTokens = async (address, taxon) => {
+  try {
+    if (!address) throw new Error("Can't get NFTs without account address.");
+    if ((await this.checkIfAccountExists(address)) == false)
+      throw new Error(`Account from request was not found om XRPL`);
+    const client = new xrpl.Client(process.env.SELECTED_NETWORK);
+    await client.connect();
+    let nfts = await client.request({
+      method: "account_nfts",
+      account: address,
+    });
+    let accountNfts = nfts.result.account_nfts;
+    //console.log("Found ", accountNfts.length, " NFTs in account ", address);
+    while (true) {
+      if (nfts["result"]["marker"] === undefined) {
+        break;
+      } else {
+        nfts = await client.request({
+          method: "account_nfts",
+          account: address,
+          marker: nfts["result"]["marker"],
+        });
+        accountNfts = accountNfts.concat(nfts.result.account_nfts);
+      }
+    }
+    client.disconnect();
+    if (taxon) return accountNfts.filter((a) => a.NFTokenTaxon == taxon);
+    return accountNfts;
+  } catch (error) {
+    console.error(error);
+    return error;
+  }
+};
+
+const checkNftOwnership = async (account, owner) => {
+  const accountNfts = await getBatchNFTokens(account);
+
+  for (let i = 0; i != accountNfts.length; i++) {
+    if (accountNfts[i].Issuer == owner) {
+      return true;
+    }
+    if (i == accountNfts.length - 1) return false;
+  }
+};
+
 const createDataVault = async (
   name,
   account,
@@ -46,6 +97,14 @@ const createDataVault = async (
   return true;
 };
 
+const getSessionStatus = async (account) => {
+  const userSessionTime = sessions.get(account);
+  const timeDifferece = Date.now() - userSessionTime;
+  console.log(timeDifferece);
+  if (timeDifferece > 600000) return false;
+  return true;
+};
+
 const getVaultData = async (account, vaultId) => {
   const doesUserHaveSession = sessions.has(account);
   console.log(doesUserHaveSession);
@@ -54,10 +113,18 @@ const getVaultData = async (account, vaultId) => {
       "User have to authenticate before retrieving data from vault."
     );
 
-  const userSessionTime = sessions.get(account);
-  const timeDifferece = Date.now() - userSessionTime;
-  console.log(timeDifferece);
-  if (timeDifferece > 600000) throw new Error("User session have expired.");
+  if (await !getSessionStatus(account))
+    throw new Error("User session have expired.");
+
+  if (
+    vaults[vaultId].whitelist &&
+    vaults[vaultId].whitelistedAdresses.indexOf(account) == -1
+  )
+    throw new Error("User is not whitelisted.");
+
+  if (vaults[vaultId].requiresNft)
+    if (!checkNftOwnership(account, vaults[vaultId].owner))
+      throw new Error("User does not have required NFT.");
 
   if (vaultId >= vaults.length)
     throw new Error("Can't get data for nonexisting vault.");
@@ -113,6 +180,24 @@ app.get("/api/login", (req, res) => {
       console.log(account, signature);
       return res.send({
         result: await verifyUserSignature(account, signature),
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({
+        Error: `${error}`,
+      });
+    }
+  })();
+});
+
+app.get("/api/checkUserSession", (req, res) => {
+  (async () => {
+    try {
+      const { account } = await req.query;
+      console.log(account);
+
+      return res.send({
+        result: await getSessionStatus(account),
       });
     } catch (error) {
       console.error(error);
