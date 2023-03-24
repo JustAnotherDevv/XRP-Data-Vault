@@ -83,7 +83,7 @@ function Vaults() {
   function AllowConainer() {
     return (
       <>
-        {true ? (
+        {!article ? (
           <div>
             <p className="my-48 text-gray-300">
               You're not allowed to view this article
@@ -91,7 +91,7 @@ function Vaults() {
           </div>
         ) : (
           <div className="">
-            <Article markdown={`${article.ipfsData}`} />
+            <Article markdown={`${article.data}`} />
           </div>
         )}
       </>
@@ -118,7 +118,7 @@ function Vaults() {
           ) : (
             <div className="flex flex-col items-center p-5">
               <p className="text-6xl font-bold mt-64 mb-16 text-gray-300">
-                Your token-gated experience begins here
+                {article.name}
               </p>
               <ArticleContainer />
             </div>

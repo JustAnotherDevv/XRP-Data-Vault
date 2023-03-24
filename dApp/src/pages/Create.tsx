@@ -12,14 +12,20 @@ function Create() {
   const [openPayloadUrl, setOpenPayloadUrl] = useState("");
   const { xummInstance, account, chainId, connected, connect, disconnect } =
     useContext(LedgerContext);
-  const [formValues, setFormValues] = useState({});
+  const [formValues, setFormValues] = useState({
+    name: "",
+    requiresWhietelist: "false",
+    requiresNft: "false",
+    whitelistedAdresses: "",
+    markdownText: "",
+  });
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     const {
       name,
-      account,
+      // account,
       requiresWhietelist,
       requiresNft,
       whitelistedAdresses,
@@ -33,7 +39,7 @@ function Create() {
       },
       body: JSON.stringify({
         name,
-        account,
+        account: account,
         requiresWhietelist,
         requiresNft,
         whitelistedAdresses,
@@ -91,7 +97,7 @@ function Create() {
           ) : (
             <form
               onSubmit={handleSubmit}
-              className="py-6 px-20 rounded-lg bg-gray-800"
+              className="py-6 px-20 rounded-lg bg-gray-800 w-1/2"
             >
               <div className="mb-4">
                 <label
@@ -113,36 +119,41 @@ function Create() {
               <div className="mb-4">
                 <label
                   className="block text-gray-400 font-bold mb-2"
-                  htmlFor="account"
-                >
-                  Account
-                </label>
-                <input
-                  className="bg-gray-900 shadow appearance-none rounded w-full py-2 px-3 text-gray-300 leading-tight focus:outline-none focus:shadow-outline"
-                  id="account"
-                  type="text"
-                  placeholder="Enter account"
-                  name="account"
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  className="block text-gray-400 font-bold mb-2"
                   htmlFor="requiresWhietelist"
                 >
                   Required whitelist
                 </label>
-                <input
-                  className="bg-gray-900 shadow appearance-none rounded w-full py-2 px-3 text-gray-300 leading-tight focus:outline-none focus:shadow-outline"
-                  id="requiresWhietelist"
-                  type="text"
-                  placeholder="Enter requiresWhietelist"
-                  name="requiresWhietelist"
-                  onChange={handleChange}
-                  required
-                />
+
+                <div className="flex space-x-4">
+                  <div className="flex items-center dark:bg-gray-800">
+                    <input
+                      type="radio"
+                      id="trueOption"
+                      name="requiresWhietelist"
+                      value="true"
+                      checked={formValues.requiresWhietelist === "true"}
+                      onChange={handleChange}
+                      className="form-radio h-5 w-5 border border-1 border-black"
+                    />
+                    <label htmlFor="trueOption" className="ml-2 text-gray-300">
+                      True
+                    </label>
+                  </div>
+                  <div className="flex items-center ">
+                    <input
+                      type="radio"
+                      id="falseOption"
+                      name="requiresWhietelist"
+                      value="false"
+                      checked={formValues.requiresWhietelist === "false"}
+                      onChange={handleChange}
+                      className="form-radio h-5 w-5 text-gray-300 bg-gray-700 shadow rounded-full"
+                    />
+                    <label htmlFor="falseOption" className="ml-2 text-gray-300">
+                      False
+                    </label>
+                  </div>
+                </div>
               </div>
               <div className="mb-4">
                 <label
@@ -151,22 +162,44 @@ function Create() {
                 >
                   Required NFT
                 </label>
-                <input
-                  className="bg-gray-900 shadow appearance-none rounded w-full py-2 px-3 text-gray-300 leading-tight focus:outline-none focus:shadow-outline"
-                  id="requiresNft"
-                  type="text"
-                  placeholder="Enter requiresNft"
-                  name="requiresNft"
-                  onChange={handleChange}
-                  required
-                />
+
+                <div className="flex space-x-4">
+                  <div className="flex items-center dark:bg-gray-800">
+                    <input
+                      type="radio"
+                      id="trueOption"
+                      name="requiresNft"
+                      value="true"
+                      checked={formValues.requiresNft === "true"}
+                      onChange={handleChange}
+                      className="form-radio h-5 w-5 border border-1 border-black"
+                    />
+                    <label htmlFor="trueOption" className="ml-2 text-gray-300">
+                      True
+                    </label>
+                  </div>
+                  <div className="flex items-center ">
+                    <input
+                      type="radio"
+                      id="falseOption"
+                      name="requiresNft"
+                      value="false"
+                      checked={formValues.requiresNft === "false"}
+                      onChange={handleChange}
+                      className="form-radio h-5 w-5 text-gray-300 bg-gray-700 shadow rounded-full"
+                    />
+                    <label htmlFor="falseOption" className="ml-2 text-gray-300">
+                      False
+                    </label>
+                  </div>
+                </div>
               </div>
               <div className="mb-4">
                 <label
                   className="block text-gray-400 font-bold mb-2"
                   htmlFor="whitelistedAdresses"
                 >
-                  Whitelisted adresses
+                  Whitelisted adresses (separated by comma)
                 </label>
                 <input
                   className="bg-gray-900 shadow appearance-none rounded w-full py-2 px-3 text-gray-300 leading-tight focus:outline-none focus:shadow-outline"
@@ -185,8 +218,8 @@ function Create() {
                 >
                   Markdown text
                 </label>
-                <input
-                  className="bg-gray-900 shadow appearance-none rounded w-full py-2 px-3 text-gray-300 leading-tight focus:outline-none focus:shadow-outline"
+                <textarea
+                  className="bg-gray-900 shadow appearance-none rounded w-full py-2 px-3 text-gray-300 leading-tight focus:outline-none focus:shadow-outline h-48"
                   id="markdownText"
                   type="text"
                   placeholder="Enter markdown text"

@@ -27,6 +27,64 @@ app.listen(port, () => {
 let vaults = [];
 let sessions = new Map();
 
+/**
+ * Checks if all required params were provided for requested endpoint
+ * @param {Array} params - list of parameters that are necessary for correct execution of code in checked endpoint
+ */
+const requireParams = (params) => {
+  return (req, res, next) => {
+    const reqParamList = Object.keys(req.query);
+    const reqValueList = Object.values(req.query);
+    const hasAllRequiredParams = params.every((param) =>
+      reqParamList.includes(param)
+    );
+    let hasNonEmptyParams = false;
+    if (hasAllRequiredParams) {
+      hasNonEmptyParams = reqValueList.every(
+        (paramValue) => paramValue.length != 0
+      );
+    }
+    if (!hasAllRequiredParams || !hasNonEmptyParams)
+      return res
+        .status(400)
+        .send(
+          `The following parameters are all required for this route: ${params.join(
+            ", "
+          )}`
+        );
+    next();
+  };
+};
+
+/**
+ * Checks if all required params were provided for requested endpoint
+ * @param {Array} params - list of parameters that are necessary for correct execution of code in checked endpoint
+ */
+const requireBody = (params) => {
+  return (req, res, next) => {
+    const reqParamList = Object.keys(req.body);
+    const reqValueList = Object.values(req.body);
+    const hasAllRequiredParams = params.every((param) =>
+      reqParamList.includes(param)
+    );
+    let hasNonEmptyParams = false;
+    if (hasAllRequiredParams) {
+      hasNonEmptyParams = reqValueList.every(
+        (paramValue) => paramValue.length != 0
+      );
+    }
+    if (!hasAllRequiredParams || !hasNonEmptyParams)
+      return res
+        .status(400)
+        .send(
+          `The following parameters are all required for this route: ${params.join(
+            ", "
+          )}`
+        );
+    next();
+  };
+};
+
 const verifyUserSignature = async (account, signature) => {
   const verificationStatus = verifySignature(signature, account);
   console.log(verificationStatus);
@@ -48,8 +106,6 @@ const verifyUserSignature = async (account, signature) => {
 const getBatchNFTokens = async (address, taxon) => {
   try {
     if (!address) throw new Error("Can't get NFTs without account address.");
-    if ((await this.checkIfAccountExists(address)) == false)
-      throw new Error(`Account from request was not found om XRPL`);
     const client = new xrpl.Client(process.env.SELECTED_NETWORK);
     await client.connect();
     let nfts = await client.request({
@@ -57,7 +113,7 @@ const getBatchNFTokens = async (address, taxon) => {
       account: address,
     });
     let accountNfts = nfts.result.account_nfts;
-    //console.log("Found ", accountNfts.length, " NFTs in account ", address);
+    console.log("Found ", accountNfts.length, " NFTs in account ", address);
     while (true) {
       if (nfts["result"]["marker"] === undefined) {
         break;
@@ -88,6 +144,8 @@ const checkNftOwnership = async (account, owner) => {
     }
     if (i == accountNfts.length - 1) return false;
   }
+
+  return false;
 };
 
 const createDataVault = async (
@@ -103,7 +161,9 @@ const createDataVault = async (
     name: name,
     owner: account,
     whitelist: requiresWhietelist,
-    whitelistedAdresses: whitelistedAdresses,
+    whitelistedAdresses: whitelistedAdresses
+      .split(",")
+      .map((value) => value.trim()),
     requiresNft: requiresNft,
     data: ipfsData,
   });
@@ -133,14 +193,20 @@ const getVaultData = async (account, vaultId) => {
     throw new Error("User session have expired.");
 
   if (
-    vaults[vaultId].whitelist &&
+    vaults[vaultId].whitelist == "true" &&
     vaults[vaultId].whitelistedAdresses.indexOf(account) == -1
   )
-    throw new Error("User is not whitelisted.");
+    return false;
+  // throw new Error("User is not whitelisted.");
 
-  if (vaults[vaultId].requiresNft)
-    if (!checkNftOwnership(account, vaults[vaultId].owner))
-      throw new Error("User does not have required NFT.");
+  if (vaults[vaultId].requiresNft == "true") {
+    const isNftRequirementMet = await checkNftOwnership(
+      account,
+      vaults[vaultId].owner
+    );
+    if (!isNftRequirementMet) return false;
+    // throw new Error("User does not have required NFT.");
+  }
 
   if (vaultId >= vaults.length)
     throw new Error("Can't get data for nonexisting vault.");
@@ -189,7 +255,7 @@ const postToIPFS = async (data) => {
   return path;
 };
 
-app.get("/api/login", (req, res) => {
+app.get("/api/login", requireParams(["account", "signature"]), (req, res) => {
   (async () => {
     try {
       const { account, signature } = await req.query;
@@ -206,7 +272,7 @@ app.get("/api/login", (req, res) => {
   })();
 });
 
-app.get("/api/checkUserSession", (req, res) => {
+app.get("/api/checkUserSession", requireParams(["account"]), (req, res) => {
   (async () => {
     try {
       const { account } = await req.query;
@@ -224,48 +290,59 @@ app.get("/api/checkUserSession", (req, res) => {
   })();
 });
 
-app.post("/api/addVault", async (req, res) => {
-  try {
-    const {
-      name,
-      account,
-      requiresWhietelist,
-      requiresNft,
-      whitelistedAdresses,
-      markdownText,
-    } = await req.body;
-
-    console.log(req.body);
-    console.log(
-      name,
-      account,
-      requiresWhietelist,
-      requiresNft,
-      whitelistedAdresses,
-      markdownText
-    );
-
-    const ipfsData = await postToIPFS(JSON.stringify(markdownText));
-
-    return res.send({
-      result: await createDataVault(
+app.post(
+  "/api/addVault",
+  requireBody([
+    "name",
+    "account",
+    "requiresWhietelist",
+    "requiresNft",
+    "whitelistedAdresses",
+    "markdownText",
+  ]),
+  async (req, res) => {
+    try {
+      const {
         name,
         account,
         requiresWhietelist,
         requiresNft,
         whitelistedAdresses,
-        ipfsData
-      ),
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send({
-      Error: `${error}`,
-    });
-  }
-});
+        markdownText,
+      } = await req.body;
 
-app.get("/api/getVault", (req, res) => {
+      console.log(req.body);
+      console.log(
+        name,
+        account,
+        requiresWhietelist,
+        requiresNft,
+        whitelistedAdresses,
+        markdownText
+      );
+
+      const ipfsData = await postToIPFS(JSON.stringify(markdownText));
+
+      return res.send({
+        result: await createDataVault(
+          name,
+          account,
+          requiresWhietelist,
+          requiresNft,
+          whitelistedAdresses,
+          ipfsData
+        ),
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({
+        Error: `${error}`,
+      });
+    }
+  }
+);
+
+app.get("/api/getVault", requireParams(["account", "vaultId"]), (req, res) => {
   (async () => {
     try {
       const { account, vaultId } = await req.query;
