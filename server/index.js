@@ -1,10 +1,23 @@
 const express = require("express");
 const xrpl = require("xrpl");
 require("dotenv").config();
+const bodyParser = require("body-parser");
 const fs = require("fs");
 const verifySignature = require("verify-xrpl-signature").verifySignature;
 
 const app = express();
+
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }));
+
+// parse application/json
+app.use(bodyParser.json());
+
+// app.use(function (req, res) {
+//   res.setHeader("Content-Type", "text/plain");
+//   res.write("you posted:\n");
+//   res.end(JSON.stringify(req.body, null, 2));
+// });
 
 const port = 4000;
 app.listen(port, () => {
@@ -86,6 +99,7 @@ const createDataVault = async (
   ipfsData
 ) => {
   vaults.push({
+    id: vaults.length,
     name: name,
     owner: account,
     whitelist: requiresWhietelist,
@@ -98,6 +112,8 @@ const createDataVault = async (
 };
 
 const getSessionStatus = async (account) => {
+  if (!sessions.has(account)) return false;
+
   const userSessionTime = sessions.get(account);
   const timeDifferece = Date.now() - userSessionTime;
   console.log(timeDifferece);
@@ -208,45 +224,45 @@ app.get("/api/checkUserSession", (req, res) => {
   })();
 });
 
-app.get("/api/addVault", (req, res) => {
-  (async () => {
-    try {
-      const {
+app.post("/api/addVault", async (req, res) => {
+  try {
+    const {
+      name,
+      account,
+      requiresWhietelist,
+      requiresNft,
+      whitelistedAdresses,
+      markdownText,
+    } = await req.body;
+
+    console.log(req.body);
+    console.log(
+      name,
+      account,
+      requiresWhietelist,
+      requiresNft,
+      whitelistedAdresses,
+      markdownText
+    );
+
+    const ipfsData = await postToIPFS(JSON.stringify(markdownText));
+
+    return res.send({
+      result: await createDataVault(
         name,
         account,
         requiresWhietelist,
         requiresNft,
         whitelistedAdresses,
-        markdownText,
-      } = await req.query;
-      console.log(
-        name,
-        account,
-        requiresWhietelist,
-        requiresNft,
-        whitelistedAdresses,
-        markdownText
-      );
-
-      const ipfsData = await postToIPFS(JSON.stringify(markdownText));
-
-      return res.send({
-        result: await createDataVault(
-          name,
-          account,
-          requiresWhietelist,
-          requiresNft,
-          whitelistedAdresses,
-          ipfsData
-        ),
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).send({
-        Error: `${error}`,
-      });
-    }
-  })();
+        ipfsData
+      ),
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      Error: `${error}`,
+    });
+  }
 });
 
 app.get("/api/getVault", (req, res) => {
@@ -270,7 +286,7 @@ app.get("/api/displayVaults", (req, res) => {
   (async () => {
     try {
       //   const { account, vaultId } = await req.query;
-      return res.send({
+      return res.status(200).send({
         result: await getPublicVaults(),
       });
     } catch (error) {

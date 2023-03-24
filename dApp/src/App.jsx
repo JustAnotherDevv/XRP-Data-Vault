@@ -6,10 +6,19 @@ import {
   rippleTimeToISOTime,
   rippleTimeToUnixTime,
 } from "xrpl";
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  RouterProvider,
+  Route,
+  Link,
+} from "react-router-dom";
 import Navbar from "./components/layout/Navbar";
 import LedgerProvider from "./contexts/LedgerProvider.tsx";
 import { LedgerContext } from "./contexts/LedgerProvider.tsx";
 import Home from "./pages/Home";
+import Vaults from "./pages/Vaults";
+import Create from "./pages/Create";
 
 async function getBatchAccountTx(address) {
   try {
@@ -53,6 +62,16 @@ function App() {
   const { xummInstance, account, chainId, connected } =
     useContext(LedgerContext);
 
+  const router = createBrowserRouter(
+    createRoutesFromElements(
+      <Route path="/" element={<Navbar />}>
+        <Route path="/" element={<Home />} />
+        <Route path="create" element={<Create />} />
+        <Route path="inVault/:id" element={<Vaults />} />
+      </Route>
+    )
+  );
+
   useEffect(() => {
     (async () => {})();
   }, []);
@@ -61,8 +80,7 @@ function App() {
     <>
       <LedgerProvider>
         <div className="min-w-screen h-screen bg-gray-900">
-          <Navbar />
-          <Home />
+          <RouterProvider router={router} />
         </div>
       </LedgerProvider>
     </>

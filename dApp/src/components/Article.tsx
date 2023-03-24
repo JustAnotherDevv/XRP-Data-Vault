@@ -7,7 +7,7 @@ import {
 } from "xrpl";
 import ReactMarkdown from "react-markdown";
 
-const Article = () => {
+const Article = (props) => {
   const [selectedArticle, setSelectedArticle] = useState(`# Introduction
 
   This is example of **token-gated** article that's visible only to logged in users that have passed required checks and verified that they are users of the provided account.
@@ -22,6 +22,7 @@ const Article = () => {
   `);
   return (
     <div>
+      <p>{props.markdown}</p>
       <div className="border-2 border-gray-800 bg-gray-900 text-gray-200 p-10 rounded-lg w-fit flex flex-col items-center min-h-16 prose-p:text-gray-300 prose-h1:text-gray-300 prose-h2:text-gray-300 prose-h3:text-gray-300 prose-h4:text-gray-300 max-w-none mx-48 prose-strong:text-gray-500 prose-a:text-gray-500 prose-ol:text-gray-500 prose-ul:text-gray-500 prose-li:text-gray-500">
         {!false ? (
           <div className="prose text-left bg-base-200 max-w-none">

@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useEffect, useState } from "react";
 import { Xumm } from "xumm";
+import { sleep } from "../utils";
 
 export const LedgerContext = createContext({
   xummInstance: null,
@@ -40,6 +41,8 @@ const LedgerProvider = ({ children }) => {
   };
 
   const getData = async () => {
+    let payloadRes;
+
     let payload = await xummInstance.payload?.createAndSubscribe(
       {
         Account: account,
@@ -53,6 +56,7 @@ const LedgerProvider = ({ children }) => {
           const { payload_uuidv4 } = await xummInstance.environment.jwt;
           const payloadResult = await xummInstance.payload?.get(payload_uuidv4);
           console.log(payloadResult);
+          payloadRes = payloadResult.response.hex;
           return true;
         }
       }
@@ -62,14 +66,22 @@ const LedgerProvider = ({ children }) => {
     console.log(await xummInstance.payload?.get(payload.created));
     window.open(payload.created.next.no_push_msg_received);
 
-    xummInstance.on("success", async () => {
-      // console.log(await xummInstance.payload?.get(payload.created));
-      const { payload_uuidv4 } = await xummInstance.environment.jwt;
-      const payloadResult = await xummInstance.payload?.get(payload_uuidv4);
-      console.log(payloadResult);
-    });
+    // xummInstance.on("success", async () => {
+    //   // console.log(await xummInstance.payload?.get(payload.created));
+    //   const { payload_uuidv4 } = await xummInstance.environment.jwt;
+    //   const payloadResult = await xummInstance.payload?.get(payload_uuidv4);
+    //   console.log(payloadResult);
+    // });
 
-    return payload;
+    for (;;) {
+      console.log("Waiting for user to sign tx");
+      if (payloadRes) {
+        console.log(payloadRes);
+        return payloadRes;
+      } else {
+        await sleep(1000);
+      }
+    }
   };
 
   useEffect(() => {
@@ -89,7 +101,7 @@ const LedgerProvider = ({ children }) => {
       (async () => {
         console.log(xummInstance);
         const connectedAcc = xummInstance.user.account.then((a) => {
-          console.log("a ", a);
+          // console.log("a ", a);
           if (a.length != 0 && !initialized) {
             setInitialized(true);
             console.log("connecting");
