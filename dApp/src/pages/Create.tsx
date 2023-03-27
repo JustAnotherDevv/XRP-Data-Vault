@@ -30,12 +30,14 @@ function Create() {
       requiresNft,
       whitelistedAdresses,
       markdownText,
+      vaultImg,
     } = formValues;
 
     const response = await fetch("/api/addVault", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        // "Content-Type": "multipart/form-data",
       },
       body: JSON.stringify({
         name,
@@ -44,8 +46,27 @@ function Create() {
         requiresNft,
         whitelistedAdresses,
         markdownText,
+        vaultImg,
       }),
     });
+
+    // const formData = new FormData();
+    // formData.append("name", name);
+    // formData.append("account", account);
+    // formData.append("requiresWhietelist", requiresWhietelist);
+    // formData.append("requiresNft", requiresNft);
+    // formData.append("whitelistedAdresses", whitelistedAdresses);
+    // formData.append("markdownText", markdownText);
+    // formData.append("vaultImg", vaultImg);
+
+    // const response = await fetch("/api/addVault", {
+    //   method: "POST",
+    //   headers: {
+    //     // "Content-Type": "application/json",
+    //     "Content-Type": "multipart/form-data",
+    //   },
+    //   body: formData,
+    // });
 
     // console.log(
     //   JSON.stringify({
@@ -69,6 +90,11 @@ function Create() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    setFormValues({ ...formValues, [name]: value });
+  };
+
+  const handleFileChange = (event) => {
+    const { name, value } = event.target.files[0];
     setFormValues({ ...formValues, [name]: value });
   };
 
@@ -207,6 +233,24 @@ function Create() {
                   type="text"
                   placeholder="Enter whitelisted adresses"
                   name="whitelistedAdresses"
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label
+                  className="block text-gray-400 font-bold mb-2"
+                  htmlFor="whitelistedAdresses"
+                >
+                  Vault image
+                </label>
+                <input
+                  className="bg-gray-900 shadow appearance-none rounded w-full py-2 px-3 text-gray-300 leading-tight focus:outline-none focus:shadow-outline"
+                  id="vaultImg"
+                  type="text"
+                  name="vaultImg"
+                  accept=".png,.jpg, .JPEG"
+                  placeholder="Enter link to image"
                   onChange={handleChange}
                   required
                 />

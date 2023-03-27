@@ -4,6 +4,7 @@ require("dotenv").config();
 const bodyParser = require("body-parser");
 const fs = require("fs");
 const verifySignature = require("verify-xrpl-signature").verifySignature;
+const multer = require("multer");
 
 const app = express();
 
@@ -26,6 +27,17 @@ app.listen(port, () => {
 
 let vaults = [];
 let sessions = new Map();
+
+const storage = multer.diskStorage({
+  destination: function (req, file, callback) {
+    callback(null, "uploads/");
+  },
+  filename: function (req, file, callback) {
+    callback(null, file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
 
 /**
  * Checks if all required params were provided for requested endpoint
@@ -64,6 +76,7 @@ const requireBody = (params) => {
   return (req, res, next) => {
     const reqParamList = Object.keys(req.body);
     const reqValueList = Object.values(req.body);
+    console.log(reqValueList);
     const hasAllRequiredParams = params.every((param) =>
       reqParamList.includes(param)
     );
@@ -154,7 +167,8 @@ const createDataVault = async (
   requiresWhietelist,
   requiresNft,
   whitelistedAdresses,
-  ipfsData
+  ipfsData,
+  vaultImg
 ) => {
   vaults.push({
     id: vaults.length,
@@ -166,6 +180,7 @@ const createDataVault = async (
       .map((value) => value.trim()),
     requiresNft: requiresNft,
     data: ipfsData,
+    vaultImg: vaultImg,
   });
   console.log(vaults);
   return true;
@@ -297,8 +312,9 @@ app.post(
     "account",
     "requiresWhietelist",
     "requiresNft",
-    "whitelistedAdresses",
+    // "whitelistedAdresses",
     "markdownText",
+    "vaultImg",
   ]),
   async (req, res) => {
     try {
@@ -309,6 +325,7 @@ app.post(
         requiresNft,
         whitelistedAdresses,
         markdownText,
+        vaultImg,
       } = await req.body;
 
       console.log(req.body);
@@ -318,8 +335,10 @@ app.post(
         requiresWhietelist,
         requiresNft,
         whitelistedAdresses,
-        markdownText
+        vaultImg
       );
+
+      console.log(await postToIPFS(vaultImg));
 
       const ipfsData = await postToIPFS(JSON.stringify(markdownText));
 
@@ -330,7 +349,8 @@ app.post(
           requiresWhietelist,
           requiresNft,
           whitelistedAdresses,
-          ipfsData
+          ipfsData,
+          vaultImg
         ),
       });
     } catch (error) {

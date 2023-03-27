@@ -100,20 +100,13 @@ function Home() {
     return (
       <div className="w-64 h-64 flex flex-col justify-center items-center p-4 rounded-lg shadow-lg bg-gray-800 hover:shadow-xl transition duration-300 ease-in-out transform hover:-translate-y-1">
         <h3 className="text-lg font-bold overflow-hidden w-52">{title}</h3>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth="1.5"
-          stroke="currentColor"
-          className="w-24 h-24 my-6 text-green-300"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"
-          />
-        </svg>
+        <img
+          src={
+            "https://media.discordapp.net/attachments/666210030046937088/1090013919235539014/cat_paypal.PNG?width=106&height=103"
+          }
+          alt="Vault Image"
+          className="w-42 h-42 my-4"
+        />
 
         <div className="flex gap-x-2">
           {whitelist ? (
